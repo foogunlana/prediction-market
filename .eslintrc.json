@@ -31,6 +31,7 @@
         "artifacts": true,
         "it": true,
         "beforeEach": true,
-        "assert": true
+        "assert": true,
+        "web3": true
     }
 }
