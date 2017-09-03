@@ -6,7 +6,7 @@ contract("PredictionMarket", accounts => {
   let instance;
 
   beforeEach(() => {
-    return new PredictionMarket(
+    return PredictionMarket.new(
       administrator,
       {from: owner})
     .then(_instance => {
