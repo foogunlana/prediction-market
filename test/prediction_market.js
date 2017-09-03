@@ -110,7 +110,7 @@ contract("PredictionMarket", accounts => {
     return expectedExceptionPromise(() => {
       return instance.setQuestion(
         question,
-        {from: owner});
+        {from: owner, gas: 2000000});
     }, 2000000);
   });
 
@@ -136,7 +136,7 @@ contract("PredictionMarket", accounts => {
     return expectedExceptionPromise(() => {
       return instance.resolve(
         answer,
-        {from: owner});
+        {from: owner, gas: 2000000});
     }, 2000000);
   });
 
