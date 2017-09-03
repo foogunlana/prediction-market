@@ -56,6 +56,7 @@ function expectedExceptionPromise(action, gasToUse) {
 contract("PredictionMarket", accounts => {
   const owner = accounts[0];
   const administrator = accounts[1];
+  const user = accounts[2];
   const question = "Will climate change end the world by 2050?";
   let instance;
 
@@ -101,5 +102,23 @@ contract("PredictionMarket", accounts => {
         question,
         {from: owner});
     }, 2000000);
+  });
+
+  it("should let any user bet some value with a yes or no", () => {
+    let prediction = false;
+    let amount = web3.toWei(1, "ether");
+    return instance.place(
+      prediction,
+      {from: user, value: amount})
+    .then(() => {
+      return instance.bets(user);
+    })
+    .then(_bet => {
+      assert.equal(
+        _bet[0], // prediction... Is there a better way to do this?
+        prediction,
+        "The bet was not set!"
+      );
+    });
   });
 });
