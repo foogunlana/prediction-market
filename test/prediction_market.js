@@ -157,4 +157,23 @@ contract("PredictionMarket", accounts => {
       );
     });
   });
+
+  it("should stop accepting bets after question has been answered by resolver", () => {
+    const answer = false;
+    const prediction = false;
+    const amount = web3.toWei(1, "ether");
+    return instance.resolve(
+      answer,
+      {from: resolver})
+    .then(() => {
+      return expectedExceptionPromise(() => {
+        return instance.place(
+          prediction,
+          {from: user, value: amount, gas: 2000000});
+      }, 2000000);
+    })
+    .catch(() => {
+      assert(false, "Placing a bet didn't throw an exception!");
+    });
+  });
 });
