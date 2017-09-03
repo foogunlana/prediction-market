@@ -56,26 +56,36 @@ function expectedExceptionPromise(action, gasToUse) {
 contract("PredictionMarket", accounts => {
   const owner = accounts[0];
   const administrator = accounts[1];
-  const user = accounts[2];
+  const resolver = accounts[2];
+  const user = accounts[3];
   const question = "Will climate change end the world by 2050?";
   let instance;
 
   beforeEach(() => {
     return PredictionMarket.new(
       administrator,
+      resolver,
       {from: owner})
     .then(_instance => {
       instance = _instance;
     });
   });
 
-  it("should allow a creator add an administrator", () => {
+  it("should instantiate with trusted source and administrator", () => {
     return instance.admin()
     .then(_admin => {
       assert.equal(
         _admin,
         administrator,
         "Administrator was not set!"
+      );
+      return instance.resolver();
+    })
+    .then(_resolver => {
+      assert.equal(
+        _resolver,
+        resolver,
+        "Trused Source was not set!"
       );
     });
   });
