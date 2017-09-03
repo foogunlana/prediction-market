@@ -114,6 +114,32 @@ contract("PredictionMarket", accounts => {
     }, 2000000);
   });
 
+  it("should allow the resolver resolve the question with a boolean answer", () => {
+    const answer = false;
+    return instance.resolve(
+      answer,
+      {from: resolver})
+    .then(() => {
+      return instance.answer();
+    })
+    .then(_answer => {
+      assert.equal(
+        _answer,
+        answer,
+        "Answer was not set!"
+      );
+    });
+  });
+
+  it("should allow only the resolver answer the question", () => {
+    const answer = false;
+    return expectedExceptionPromise(() => {
+      return instance.resolve(
+        answer,
+        {from: owner});
+    }, 2000000);
+  });
+
   it("should let any user bet some value with a yes or no", () => {
     const prediction = false;
     const amount = web3.toWei(1, "ether");
