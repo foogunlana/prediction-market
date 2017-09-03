@@ -10,11 +10,19 @@ contract PredictionMarket {
         _;
     }
 
+    event LogQuestion(address indexed _sender, string _question);
+
     function PredictionMarket(address _admin) {
         admin = _admin;
     }
 
-    function setQuestion(string _question) public onlyAdmin {
+    function setQuestion(string _question)
+        public
+        onlyAdmin
+        returns(bool)
+    {
         question = _question;
+        LogQuestion(msg.sender, _question);
+        return true;
     }
 }
