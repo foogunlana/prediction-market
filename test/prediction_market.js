@@ -115,8 +115,8 @@ contract("PredictionMarket", accounts => {
   });
 
   it("should let any user bet some value with a yes or no", () => {
-    let prediction = false;
-    let amount = web3.toWei(1, "ether");
+    const prediction = false;
+    const amount = web3.toWei(1, "ether");
     return instance.place(
       prediction,
       {from: user, value: amount})
