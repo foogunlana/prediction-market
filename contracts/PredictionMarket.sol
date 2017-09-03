@@ -6,6 +6,7 @@ contract PredictionMarket {
     address public resolver;
     string public question;
     bool public answer;
+    bool public resolved;
     mapping (address => Bet) public bets;
 
     struct Bet {
@@ -20,6 +21,11 @@ contract PredictionMarket {
 
     modifier onlyResolver {
         require(msg.sender == resolver);
+        _;
+    }
+
+    modifier unResolved {
+        require(!resolved);
         _;
     }
 
@@ -45,6 +51,7 @@ contract PredictionMarket {
     function place(bool _prediction)
         public
         payable
+        unResolved
         returns(bool)
     {
         require(msg.value > 0);
@@ -60,6 +67,7 @@ contract PredictionMarket {
         onlyResolver
         returns(bool)
     {
+        resolved = true;
         answer = _answer;
         LogAnswer(msg.sender, _answer);
         return true;
