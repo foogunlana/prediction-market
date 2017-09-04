@@ -58,6 +58,7 @@ contract("PredictionMarket", accounts => {
   const admin = accounts[1];
   const otherAdmin = accounts[2];
   const notAdmin = accounts[3];
+  const question1 = "Does life have any meaning?";
   let instance;
 
   beforeEach(() => {
@@ -81,7 +82,7 @@ contract("PredictionMarket", accounts => {
     });
   });
 
-  it("should let only admins set other admins", () => {
+  it("should let only admins add other admins", () => {
     return instance.isAdmin(admin)
     .then(isAdmin => {
       assert(isAdmin, "Owner could not set admin, is owner not an admin?");
@@ -103,6 +104,32 @@ contract("PredictionMarket", accounts => {
     .catch(e => {
       if (e.toString().indexOf("Invalid Type") != -1) {
         assert(false, "Anyone can set an admin!");
+      } else {
+        throw e;
+      }
+    });
+  });
+
+  it("should let only admins add questions", () => {
+    return instance.addQuestion(
+      question1,
+      {from: admin})
+    .then(() => {
+      return instance.questions(web3.sha3(question1));
+    })
+    .then(_question => {
+      assert.equal(_question, question1, "An admin could not add a question");
+      return expectedExceptionPromise(() => {
+        return instance.addQuestion(
+          question1,
+          {from: notAdmin, gas: 2000000});
+      }, 2000000);
+    })
+    .catch(e => {
+      if (e.toString().indexOf("Invalid Type") != -1) {
+        assert(false, "Anyone can set a question!");
+      } else {
+        throw e;
       }
     });
   });
