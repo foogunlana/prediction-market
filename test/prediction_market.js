@@ -59,6 +59,7 @@ contract("PredictionMarket", accounts => {
   const otherAdmin = accounts[2];
   const notAdmin = accounts[3];
   const user = accounts[4];
+  const trustedSource = accounts[4];
   const question1 = "Does life have any meaning?";
   const yesAmountIndex = 0;
   const noAmountIndex = 1;
@@ -139,6 +140,30 @@ contract("PredictionMarket", accounts => {
     .catch(e => {
       if (e.toString().indexOf("Invalid Type") != -1) {
         assert(false, "Anyone can set a question!");
+      } else {
+        throw e;
+      }
+    });
+  });
+
+  it("should let only admins add trusted sources", () => {
+    return instance.addTrustedSource(
+      trustedSource,
+      {from: admin})
+    .then(() => {
+      return instance.isTrustedSource(trustedSource);
+    })
+    .catch(() => {
+      assert(false, "An admin could not add a trusted source");
+      return expectedExceptionPromise(() => {
+        return instance.addTrustedSource(
+          trustedSource,
+          {from: notAdmin, gas: 2000000});
+      }, 2000000);
+    })
+    .catch(e => {
+      if (e.toString().indexOf("Invalid Type") != -1) {
+        assert(false, "Anyone can set a trusted source!");
       } else {
         throw e;
       }
