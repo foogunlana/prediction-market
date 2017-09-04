@@ -4,8 +4,14 @@ import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
 
 contract PredictionMarket is Ownable {
+    struct Question {
+        uint yesAmount;
+        uint noAmount;
+        uint yesCount;
+        uint noCount;
+    }
     mapping (address => bool) public isAdmin;
-    mapping (bytes32 => string) public questions;
+    mapping (bytes32 => Question) public questions;
 
     event LogAddAdmin(address _admin);
     event LogAddQuestion(address _admin, bytes32 _questionHash);
@@ -35,7 +41,7 @@ contract PredictionMarket is Ownable {
         returns(bool)
     {
         bytes32 questionHash = sha3(_question);
-        questions[questionHash] = _question;
+        questions[questionHash] = Question(0, 0, 0, 0);
         LogAddQuestion(msg.sender, questionHash);
         return true;
     }

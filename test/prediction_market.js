@@ -117,8 +117,16 @@ contract("PredictionMarket", accounts => {
     .then(() => {
       return instance.questions(web3.sha3(question1));
     })
+    .catch(() => {
+      assert(false, "An admin could not create a question");
+    })
     .then(_question => {
-      assert.equal(_question, question1, "An admin could not add a question");
+      _question.map(n => {
+        assert.equal(
+          n.valueOf(),
+          "0",
+          "The question not properly initialized!");
+      });
       return expectedExceptionPromise(() => {
         return instance.addQuestion(
           question1,
