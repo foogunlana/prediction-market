@@ -57,6 +57,7 @@ contract("PredictionMarket", accounts => {
   const owner = accounts[0];
   const admin = accounts[1];
   const otherAdmin = accounts[2];
+  const notAdmin = accounts[3];
   let instance;
 
   beforeEach(() => {
@@ -77,8 +78,8 @@ contract("PredictionMarket", accounts => {
     });
   });
 
-  it("should let admins set other admins", () => {
-    return instance.setAdmin(
+  it("should let only admins set other admins", () => {
+    return instance.addAdmin(
       admin,
       {from: owner})
     .then(() => {
@@ -86,7 +87,7 @@ contract("PredictionMarket", accounts => {
     })
     .then(isAdmin => {
       assert(isAdmin, "Owner could not set admin, is owner not an admin?");
-      return instance.setAdmin(
+      return instance.addAdmin(
         otherAdmin,
         {from: admin});
     })
@@ -95,6 +96,16 @@ contract("PredictionMarket", accounts => {
     })
     .then(isAdmin => {
       assert(isAdmin, "Admin could not set another admin!");
+      return expectedExceptionPromise(() => {
+        return instance.addAdmin(
+          otherAdmin,
+          {from: notAdmin, gas: 2000000});
+      }, 2000000);
+    })
+    .catch(e => {
+      if (e.toString().indexOf("Invalid Type") != -1) {
+        assert(false, "Anyone can set an admin!");
+      }
     });
   });
 });
