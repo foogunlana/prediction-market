@@ -58,11 +58,17 @@ contract("PredictionMarket", accounts => {
   const admin = accounts[1];
   const otherAdmin = accounts[2];
   const notAdmin = accounts[3];
-  const user = accounts[4];
   const trustedSource = accounts[4];
+  const user = accounts[5];
   const question1 = "Does life have any meaning?";
   const yesAmountIndex = 0;
   const noAmountIndex = 1;
+  const answerIndex = 2;
+  const Answer = {
+    None: 0,
+    Yes: 1,
+    No: 2
+  };
   let instance;
 
   beforeEach(() => {
@@ -73,6 +79,11 @@ contract("PredictionMarket", accounts => {
       return instance.addAdmin(
         admin,
         {from: owner});
+    })
+    .then(() => {
+      return instance.addTrustedSource(
+        trustedSource,
+        {from: admin});
     });
   });
 
@@ -147,12 +158,7 @@ contract("PredictionMarket", accounts => {
   });
 
   it("should let only admins add trusted sources", () => {
-    return instance.addTrustedSource(
-      trustedSource,
-      {from: admin})
-    .then(() => {
-      return instance.isTrustedSource(trustedSource);
-    })
+    return instance.isTrustedSource(trustedSource)
     .catch(() => {
       assert(false, "An admin could not add a trusted source");
       return expectedExceptionPromise(() => {
@@ -167,6 +173,38 @@ contract("PredictionMarket", accounts => {
       } else {
         throw e;
       }
+    });
+  });
+
+  it("should allow only trusted sources answer questions", () => {
+    const answer = true;
+    return expectedExceptionPromise(() => {
+      return instance.answerQuestion(
+        question1,
+        answer,
+        {from: user, gas: 2000000});
+    }, 2000000)
+    .catch(e => {
+      if (e.toString().indexOf("Invalid Type") != -1) {
+        assert(false, "Anyone can answer a question!");
+      } else {
+        throw e;
+      }
+    })
+    .then(() => {
+      return instance.answerQuestion(
+        question1,
+        answer,
+        {from: trustedSource});
+    })
+    .then(() => {
+      return instance.questions(web3.sha3(question1));
+    })
+    .then(question => {
+      assert.equal(
+        question[answerIndex].valueOf(),
+        Answer.Yes,
+        "The answer was not set.");
     });
   });
 
