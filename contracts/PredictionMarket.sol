@@ -14,7 +14,7 @@ contract PredictionMarket is Ownable {
     mapping (bytes32 => Question) public questions;
 
     event LogAddAdmin(address _admin);
-    event LogAddQuestion(address _admin, bytes32 _questionHash);
+    event LogAddQuestion(address _admin, string _question);
 
     function PredictionMarket() {
         isAdmin[msg.sender] = true;
@@ -42,7 +42,7 @@ contract PredictionMarket is Ownable {
     {
         bytes32 questionHash = sha3(_question);
         questions[questionHash] = Question(0, 0, 0, 0);
-        LogAddQuestion(msg.sender, questionHash);
+        LogAddQuestion(msg.sender, _question);
         return true;
     }
 }
