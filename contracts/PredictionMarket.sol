@@ -4,10 +4,11 @@ import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 
 
 contract PredictionMarket is Ownable {
-
+    enum Answer {None, Yes, No}
     struct Question {
         uint totalYesAmount;
         uint totalNoAmount;
+        Answer answer;
     }
     struct Bet {
         uint yesAmount;
@@ -22,6 +23,7 @@ contract PredictionMarket is Ownable {
     event LogAddTrustedSource(address _trustedSource);
     event LogAddQuestion(address _admin, string _question);
     event LogPlaceBet(address _user, string _question, uint _yesAmount, uint _noAmount);
+    event LogAnswerQuestion(string _question, Answer _answer);
 
     function PredictionMarket() {
         isAdmin[msg.sender] = true;
@@ -29,6 +31,11 @@ contract PredictionMarket is Ownable {
 
     modifier onlyAdmin {
         require(isAdmin[msg.sender]);
+        _;
+    }
+
+    modifier onlyTrustedSource {
+        require(isTrustedSource[msg.sender]);
         _;
     }
 
@@ -58,7 +65,7 @@ contract PredictionMarket is Ownable {
         returns(bool)
     {
         bytes32 questionHash = sha3(_question);
-        questions[questionHash] = Question(0, 0);
+        questions[questionHash] = Question(0, 0, Answer.None);
         LogAddQuestion(msg.sender, _question);
         return true;
     }
@@ -74,6 +81,18 @@ contract PredictionMarket is Ownable {
         questions[questionHash].totalYesAmount += _yesAmount;
         questions[questionHash].totalNoAmount += _noAmount;
         LogPlaceBet(msg.sender, _question, _yesAmount, _noAmount);
+        return true;
+    }
+
+    function answerQuestion(string _question, bool _answer)
+        public
+        onlyTrustedSource
+        returns(bool)
+    {
+        bytes32 questionHash = sha3(_question);
+        Answer answer = _answer ? Answer.Yes : Answer.No;
+        questions[questionHash].answer = answer;
+        LogAnswerQuestion(_question, answer);
         return true;
     }
 }
