@@ -87,6 +87,8 @@ contract PredictionMarket is Ownable {
         return true;
     }
 
+    // Refactor to allow users add to bets
+    // currently existing bet is wiped out without a refund!!!
     function placeBet(string _question, uint _yesAmount, uint _noAmount)
         public
         payable
