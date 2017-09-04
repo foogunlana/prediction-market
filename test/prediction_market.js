@@ -54,5 +54,47 @@ function expectedExceptionPromise(action, gasToUse) {
 
 
 contract("PredictionMarket", accounts => {
-  
+  const owner = accounts[0];
+  const admin = accounts[1];
+  const otherAdmin = accounts[2];
+  let instance;
+
+  beforeEach(() => {
+    return PredictionMarket.new(
+      {from: owner})
+    .then(_instance => {
+      instance = _instance;
+    });
+  });
+
+  it("should add the owner as an admin", () => {
+    return instance.owner()
+    .then(_owner => {
+      return instance.isAdmin(_owner);
+    })
+    .then(isAdmin => {
+      assert(isAdmin, "Owner was not set as admin");
+    });
+  });
+
+  it("should let admins set other admins", () => {
+    return instance.setAdmin(
+      admin,
+      {from: owner})
+    .then(() => {
+      return instance.isAdmin(admin);
+    })
+    .then(isAdmin => {
+      assert(isAdmin, "Owner could not set admin, is owner not an admin?");
+      return instance.setAdmin(
+        otherAdmin,
+        {from: admin});
+    })
+    .then(() => {
+      return instance.isAdmin(otherAdmin);
+    })
+    .then(isAdmin => {
+      assert(isAdmin, "Admin could not set another admin!");
+    });
+  });
 });
