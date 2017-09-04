@@ -14,10 +14,12 @@ contract PredictionMarket is Ownable {
         uint noAmount;
     }
     mapping (address => bool) public isAdmin;
+    mapping (address => bool) public isTrustedSource;
     mapping (address => mapping (bytes32 => Bet)) public bets;
     mapping (bytes32 => Question) public questions;
 
     event LogAddAdmin(address _admin);
+    event LogAddTrustedSource(address _trustedSource);
     event LogAddQuestion(address _admin, string _question);
     event LogPlaceBet(address _user, string _question, uint _yesAmount, uint _noAmount);
 
@@ -37,6 +39,16 @@ contract PredictionMarket is Ownable {
     {
         isAdmin[_admin] = true;
         LogAddAdmin(_admin);
+        return true;
+    }
+
+    function addTrustedSource(address _trustedSource)
+        public
+        onlyAdmin
+        returns(bool)
+    {
+        isTrustedSource[_trustedSource] = true;
+        LogAddTrustedSource(_trustedSource);
         return true;
     }
 
