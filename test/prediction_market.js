@@ -58,7 +58,10 @@ contract("PredictionMarket", accounts => {
   const admin = accounts[1];
   const otherAdmin = accounts[2];
   const notAdmin = accounts[3];
+  const user = accounts[4];
   const question1 = "Does life have any meaning?";
+  const yesAmountIndex = 0;
+  const noAmountIndex = 1;
   let instance;
 
   beforeEach(() => {
@@ -136,6 +139,61 @@ contract("PredictionMarket", accounts => {
     .catch(e => {
       if (e.toString().indexOf("Invalid Type") != -1) {
         assert(false, "Anyone can set a question!");
+      } else {
+        throw e;
+      }
+    });
+  });
+
+  it("should allow anyone place a bet on a question", () => {
+    const yesAmount = web3.toWei(1, "ether");
+    const noAmount = web3.toWei(1, "ether");
+    const amount = web3.toWei(2, "ether");
+    return instance.placeBet(
+      question1,
+      yesAmount,
+      noAmount,
+      {from: user, value: amount})
+    .then(() => {
+      return instance.questions(web3.sha3(question1));
+    })
+    .then(_question => {
+      assert.equal(
+        _question[yesAmountIndex].valueOf(),
+        yesAmount.toString(),
+        "Bet yes value was not added to question");
+      assert.equal(
+        _question[noAmountIndex].valueOf(),
+        noAmount.toString(),
+        "Bet no value was not added to question");
+      return instance.bets(user, web3.sha3(question1));
+    })
+    .then(_bet => {
+      assert.equal(
+        _bet[yesAmountIndex].valueOf(),
+        yesAmount.toString(),
+        "Bet yes was not placed by user :s");
+      assert.equal(
+        _bet[noAmountIndex].valueOf(),
+        noAmount.toString(),
+        "Bet no was not placed by user :s");
+    });
+  });
+
+  it("should reject bets that don't add up (i.e. yes + no != total)", () => {
+    const yesAmount = web3.toWei(1, "ether");
+    const noAmount = web3.toWei(1, "ether");
+    const amount = web3.toWei(1, "ether");
+    return expectedExceptionPromise(() => {
+      return instance.placeBet(
+        question1,
+        yesAmount,
+        noAmount,
+        {from: user, value: amount, gas: 2000000});
+    }, 2000000)
+    .catch(e => {
+      if (e.toString().indexOf("Invalid Type") != -1) {
+        assert(false, "Invalid amounts can be set!");
       } else {
         throw e;
       }
