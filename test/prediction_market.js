@@ -65,6 +65,9 @@ contract("PredictionMarket", accounts => {
       {from: owner})
     .then(_instance => {
       instance = _instance;
+      return instance.addAdmin(
+        admin,
+        {from: owner});
     });
   });
 
@@ -79,12 +82,7 @@ contract("PredictionMarket", accounts => {
   });
 
   it("should let only admins set other admins", () => {
-    return instance.addAdmin(
-      admin,
-      {from: owner})
-    .then(() => {
-      return instance.isAdmin(admin);
-    })
+    return instance.isAdmin(admin)
     .then(isAdmin => {
       assert(isAdmin, "Owner could not set admin, is owner not an admin?");
       return instance.addAdmin(
