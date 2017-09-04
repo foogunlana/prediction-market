@@ -60,6 +60,7 @@ contract("PredictionMarket", accounts => {
   const notAdmin = accounts[3];
   const trustedSource = accounts[4];
   const user = accounts[5];
+  const otherUsers = accounts.slice(6, 9);
   const question1 = "Does life have any meaning?";
   const yesAmountIndex = 0;
   const noAmountIndex = 1;
@@ -208,10 +209,11 @@ contract("PredictionMarket", accounts => {
     });
   });
 
-  it("should allow anyone place a bet on a question", () => {
+  it("should allow anyone place a bet on an unanswered question", () => {
     const yesAmount = web3.toWei(1, "ether");
     const noAmount = web3.toWei(1, "ether");
     const amount = web3.toWei(2, "ether");
+    const answer = true;
     return instance.placeBet(
       question1,
       yesAmount,
@@ -240,6 +242,26 @@ contract("PredictionMarket", accounts => {
         _bet[noAmountIndex].valueOf(),
         noAmount.toString(),
         "Bet no was not placed by user :s");
+      return instance.answerQuestion(
+        question1,
+        answer,
+        {from: trustedSource});
+    })
+    .then(() => {
+      return expectedExceptionPromise(() => {
+        return instance.placeBet(
+          question1,
+          yesAmount,
+          noAmount,
+          {from: user, value: amount});
+      })
+      .catch(e => {
+        if (e.toString().indexOf("Invalid Type") != -1) {
+          assert(false, "Seems bets can still be placed after question is answered!");
+        } else {
+          throw e;
+        }
+      });
     });
   });
 
@@ -260,6 +282,43 @@ contract("PredictionMarket", accounts => {
       } else {
         throw e;
       }
+    });
+  });
+
+
+  // INCOMPLETE TEST!!!
+  it("should allow winning users withdraw after question resolution", () => {
+    const yesAmount = web3.toWei(1, "ether");
+    const noAmount = web3.toWei(1, "ether");
+    const amount = web3.toWei(2, "ether");
+    const answer = true;
+    const aUser = otherUsers[0];
+    return instance.addQuestion(
+      question1,
+      {from: admin})
+    .then(() => {
+      return Promise.all(otherUsers.map(oneUser => instance.placeBet(
+        question1,
+        yesAmount,
+        noAmount,
+        {from: oneUser, value: amount})));
+    })
+    .then(() => {
+      return instance.answerQuestion(
+        question1,
+        answer,
+        {from: trustedSource});
+    })
+    .then(() => {
+      return web3.eth.getBalance(aUser);
+    })
+    .then(() => {
+      return instance.withdraw(
+        question1,
+        {from: aUser});
+    })
+    .then(tx => {
+      console.log(tx);
     });
   });
 });
