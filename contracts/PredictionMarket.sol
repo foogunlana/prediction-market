@@ -16,20 +16,28 @@ contract PredictionMarket is Ownable {
         uint yesAmount;
         uint noAmount;
     }
+    // Perhaps user should be a library, not a struct
+    // That would get rid of the method accessors
     struct User {
         bool isAdmin;
         bool isTrustedSource;
         bool hasWithdrawn;
         bool exists;
+        bytes32[] betKeys;
     }
     mapping (address => User) public users;
-    mapping (address => mapping (bytes32 => Bet)) public bets;
+    mapping (bytes32 => Bet) public bets;
     mapping (bytes32 => Question) public questions;
 
     event LogAddAdmin(address _admin);
     event LogAddTrustedSource(address _trustedSource);
     event LogAddQuestion(address _admin, string _question);
-    event LogPlaceBet(address _user, string _question, uint _yesAmount, uint _noAmount);
+    event LogPlaceBet(
+        bytes32 _betHash,
+        address _user,
+        bytes32 _questionHash,
+        uint _yesAmount,
+        uint _noAmount);
     event LogAnswerQuestion(string _question, Answer _answer);
     event LogWithdraw(address _user, uint amount);
 
@@ -94,11 +102,13 @@ contract PredictionMarket is Ownable {
         returns(bool)
     {
         if (!users[_user].exists) {
+            bytes32[] memory betKeys;
             User memory user = User(
                 false,
                 false,
                 false,
-                true // exists
+                true, // exists
+                betKeys
             );
             users[_user] = user;
         }
@@ -138,10 +148,14 @@ contract PredictionMarket is Ownable {
         bytes32 questionHash = sha3(_question);
         require(questions[questionHash].answer == Answer.UnAnswered);
 
-        bets[msg.sender][questionHash] = Bet(_yesAmount, _noAmount);
+        bytes32 betHash = sha3(questionHash, msg.sender);
+        bets[betHash] = Bet(_yesAmount, _noAmount);
+        ensureUserCreated(msg.sender);
+        users[msg.sender].betKeys.push(betHash);
+
         questions[questionHash].totalYesAmount += _yesAmount;
         questions[questionHash].totalNoAmount += _noAmount;
-        LogPlaceBet(msg.sender, _question, _yesAmount, _noAmount);
+        LogPlaceBet(betHash, msg.sender, questionHash, _yesAmount, _noAmount);
         return true;
     }
 
@@ -163,20 +177,22 @@ contract PredictionMarket is Ownable {
         yetToWithdraw
         returns(bool)
     {
+        ensureUserCreated(msg.sender);
         bytes32 questionHash = sha3(_question);
+        bytes32 betKey = sha3(questionHash, msg.sender);
+
         Question storage question = questions[questionHash];
         require(question.answer != Answer.UnAnswered);
         uint amountBet;
         uint reward;
         uint total = question.totalYesAmount + question.totalNoAmount;
         if (question.answer == Answer.Yes) {
-            amountBet = bets[msg.sender][questionHash].yesAmount;
+            amountBet = bets[betKey].yesAmount;
             reward = amountBet.safeMul(total).safeDiv(question.totalYesAmount);
         } else {
-            amountBet = bets[msg.sender][questionHash].noAmount;
+            amountBet = bets[betKey].noAmount;
             reward = amountBet.safeMul(total).safeDiv(question.totalNoAmount);
         }
-        ensureUserCreated(msg.sender);
         users[msg.sender].hasWithdrawn = true;
         msg.sender.transfer(reward);
         LogWithdraw(msg.sender, reward);
