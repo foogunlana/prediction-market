@@ -1,7 +1,7 @@
 pragma solidity ^0.4.15;
 
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import { SafeMath } from './SafeMath';
+import { SafeMath } from './SafeMath.sol';
 
 
 contract PredictionMarket is Ownable {
@@ -126,6 +126,7 @@ contract PredictionMarket is Ownable {
         bytes32 questionHash = sha3(_question);
         Question storage question = questions[questionHash];
         require(question.answer != Answer.UnAnswered);
+        uint amountBet;
         uint reward;
         uint total = question.totalYesAmount + question.totalNoAmount;
         if (question.answer == Answer.Yes) {
