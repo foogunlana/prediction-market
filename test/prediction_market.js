@@ -231,7 +231,7 @@ contract("PredictionMarket", accounts => {
         _question[noAmountIndex].valueOf(),
         noAmount.toString(),
         "Bet no value was not added to question");
-      return instance.bets(user, web3.sha3(question1));
+      return instance.bets(web3.sha3(question1, user));
     })
     .then(_bet => {
       assert.equal(
