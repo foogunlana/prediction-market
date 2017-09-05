@@ -16,17 +16,13 @@ contract PredictionMarket is Ownable {
         uint yesAmount;
         uint noAmount;
     }
-    /*struct User {
-        bool admin;
-        bool trustedSource;
-        bool withdrawn;
-        mapping (bytes32 => Bet) bets;
-    }*/
-    mapping (address => bool) public isAdmin;
-    mapping (address => bool) public isTrustedSource;
-    mapping (address => bool) public withdrawn;
-
-    /*mapping (address => User) public users;*/
+    struct User {
+        bool isAdmin;
+        bool isTrustedSource;
+        bool hasWithdrawn;
+        bool exists;
+    }
+    mapping (address => User) public users;
     mapping (address => mapping (bytes32 => Bet)) public bets;
     mapping (bytes32 => Question) public questions;
 
@@ -38,31 +34,74 @@ contract PredictionMarket is Ownable {
     event LogWithdraw(address _user, uint amount);
 
     function PredictionMarket() {
-        isAdmin[msg.sender] = true;
+        ensureUserCreated(msg.sender);
+        users[msg.sender].isAdmin = true;
     }
 
     modifier onlyAdmin {
-        require(isAdmin[msg.sender]);
+        require(users[msg.sender].isAdmin);
         _;
     }
 
     modifier onlyTrustedSource {
-        require(isTrustedSource[msg.sender]);
+        require(users[msg.sender].isTrustedSource);
         _;
     }
 
     modifier yetToWithdraw {
-        require(!withdrawn[msg.sender]);
+        require(!users[msg.sender].hasWithdrawn);
         _;
     }
+
+    function isAdmin(address user)
+        public
+        constant
+        returns(bool)
+    {
+        return users[user].isAdmin;
+    }
+
+    function isTrustedSource(address user)
+        public
+        constant
+        returns(bool)
+    {
+        return users[user].isTrustedSource;
+    }
+
+    function hasWithdrawn(address user)
+        public
+        constant
+        returns(bool)
+    {
+        return users[user].hasWithdrawn;
+    }
+
 
     function addAdmin(address _admin)
         public
         onlyAdmin
         returns(bool)
     {
-        isAdmin[_admin] = true;
+        ensureUserCreated(_admin);
+        users[_admin].isAdmin = true;
         LogAddAdmin(_admin);
+        return true;
+    }
+
+    function ensureUserCreated(address _user)
+        internal
+        returns(bool)
+    {
+        if (!users[_user].exists) {
+            User memory user = User(
+                false,
+                false,
+                false,
+                true // exists
+            );
+            users[_user] = user;
+        }
         return true;
     }
 
@@ -71,7 +110,8 @@ contract PredictionMarket is Ownable {
         onlyAdmin
         returns(bool)
     {
-        isTrustedSource[_trustedSource] = true;
+        ensureUserCreated(_trustedSource);
+        users[_trustedSource].isTrustedSource = true;
         LogAddTrustedSource(_trustedSource);
         return true;
     }
@@ -136,7 +176,8 @@ contract PredictionMarket is Ownable {
             amountBet = bets[msg.sender][questionHash].noAmount;
             reward = amountBet.safeMul(total).safeDiv(question.totalNoAmount);
         }
-        withdrawn[msg.sender] = true;
+        ensureUserCreated(msg.sender);
+        users[msg.sender].hasWithdrawn = true;
         msg.sender.transfer(reward);
         LogWithdraw(msg.sender, reward);
         return true;
