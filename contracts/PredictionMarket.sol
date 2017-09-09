@@ -168,7 +168,6 @@ contract PredictionMarket is Ownable {
         return true;
     }
 
-    // TEST ME!!!
     function withdraw(string _question)
         public
         returns(bool)
