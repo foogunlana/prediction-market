@@ -16,7 +16,7 @@ contract PredictionMarket is Ownable {
         uint yesAmount;
         uint noAmount;
     }
-    // Perhaps user should be a library, not a struct
+    // Perhaps user should be a library or contract, not a struct
     // That would get rid of the method accessors
     struct User {
         bool isAdmin;
@@ -28,6 +28,8 @@ contract PredictionMarket is Ownable {
     mapping (address => User) public users;
     mapping (bytes32 => Bet) public bets;
     mapping (bytes32 => Question) public questions;
+    // Account for the remainders sent, but what to do with them?
+    uint public remainder;
 
     event LogAddAdmin(address _admin);
     event LogAddTrustedSource(address _trustedSource);
@@ -53,11 +55,6 @@ contract PredictionMarket is Ownable {
 
     modifier onlyTrustedSource {
         require(users[msg.sender].isTrustedSource);
-        _;
-    }
-
-    modifier yetToWithdraw {
-        require(!users[msg.sender].hasWithdrawn);
         _;
     }
 
@@ -174,10 +171,11 @@ contract PredictionMarket is Ownable {
     // TEST ME!!!
     function withdraw(string _question)
         public
-        yetToWithdraw
         returns(bool)
     {
         ensureUserCreated(msg.sender);
+        require(!users[msg.sender].hasWithdrawn);
+
         bytes32 questionHash = sha3(_question);
         bytes32 betKey = sha3(questionHash, msg.sender);
 
@@ -185,13 +183,18 @@ contract PredictionMarket is Ownable {
         require(question.answer != Answer.UnAnswered);
         uint amountBet;
         uint reward;
+        uint numerator;
         uint total = question.totalYesAmount + question.totalNoAmount;
         if (question.answer == Answer.Yes) {
             amountBet = bets[betKey].yesAmount;
-            reward = amountBet.safeMul(total).safeDiv(question.totalYesAmount);
+            numerator = amountBet.safeMul(total);
+            reward = numerator.safeDiv(question.totalYesAmount);
+            remainder += numerator % question.totalYesAmount;
         } else {
             amountBet = bets[betKey].noAmount;
-            reward = amountBet.safeMul(total).safeDiv(question.totalNoAmount);
+            numerator = amountBet.safeMul(total);
+            reward = numerator.safeDiv(question.totalNoAmount);
+            remainder += numerator % question.totalNoAmount;
         }
         users[msg.sender].hasWithdrawn = true;
         msg.sender.transfer(reward);
