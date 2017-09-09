@@ -309,15 +309,15 @@ contract("PredictionMarket", accounts => {
       let users = [{
         address: otherUsers[0],
         yesAmount: web3.toWei(1.5, "ether"),
-        noAmount: web3.toWei(1, "ether"),
+        noAmount: web3.toWei(1.2582, "ether"),
       }, {
         address: otherUsers[1],
-        yesAmount: web3.toWei(0, "ether"),
-        noAmount: web3.toWei(2, "ether"),
+        yesAmount: web3.toWei(0.3777, "ether"),
+        noAmount: web3.toWei(2.93, "ether"),
       }, {
         address: otherUsers[2],
-        yesAmount: web3.toWei(3, "ether"),
-        noAmount: web3.toWei(1, "ether"),
+        yesAmount: web3.toWei(30, "ether"),
+        noAmount: web3.toWei(1.1678, "ether"),
       }];
       let totalYesAmount = users.reduce(
         (total, user) => parseFloat(user.yesAmount) + total, 0);
@@ -365,7 +365,7 @@ contract("PredictionMarket", accounts => {
         for (let i in _balances) {
           let reward = (parseFloat(users[i].yesAmount)/parseFloat(totalYesAmount)) * total;
           // Big number cannot add to sig figs over 15 so must round reward!
-          let rounder = 10000;
+          let rounder = 100000;
           let roundedReward = reward - (reward%rounder);
           assert(
             _balances[i]

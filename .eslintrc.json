@@ -32,6 +32,7 @@
         "it": true,
         "beforeEach": true,
         "assert": true,
-        "web3": true
+        "web3": true,
+        "describe": true
     }
 }
