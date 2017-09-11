@@ -46,4 +46,11 @@ contract PredictionMarketHub is Ownable {
     {
         return PredictionMarket(_market).unpause();
     }
+
+    function takeCommission(address _market)
+        public
+        onlyOwner
+    {
+        // Prediction market should set balance 
+    }
 }

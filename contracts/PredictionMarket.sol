@@ -52,8 +52,6 @@ contract PredictionMarket is Pausable {
         uint _noAmount);
 
     function PredictionMarket(address _sponsor) {
-        ensureUserCreated(msg.sender);
-        ensureUserCreated(_sponsor);
         users[msg.sender].isAdmin = true;
         users[_sponsor].isAdmin = true;
     }
@@ -89,7 +87,6 @@ contract PredictionMarket is Pausable {
         whenNotPaused
         returns(bool)
     {
-        ensureUserCreated(_admin);
         users[_admin].isAdmin = true;
         LogAddAdmin(_admin);
         return true;
@@ -101,7 +98,6 @@ contract PredictionMarket is Pausable {
         whenNotPaused
         returns(bool)
     {
-        ensureUserCreated(_trustedSource);
         users[_trustedSource].isTrustedSource = true;
         LogAddTrustedSource(_trustedSource);
         return true;
@@ -133,7 +129,6 @@ contract PredictionMarket is Pausable {
 
         bytes32 betHash = sha3(questionHash, msg.sender);
         bets[betHash] = Bet(_yesAmount, _noAmount);
-        ensureUserCreated(msg.sender);
         users[msg.sender].betKeys.push(betHash);
 
         questions[questionHash].totalYesAmount += _yesAmount;
@@ -160,7 +155,6 @@ contract PredictionMarket is Pausable {
         whenNotPaused
         returns(bool)
     {
-        ensureUserCreated(msg.sender);
         require(!users[msg.sender].hasWithdrawn);
 
         bytes32 questionHash = sha3(_question);
@@ -186,24 +180,6 @@ contract PredictionMarket is Pausable {
         users[msg.sender].hasWithdrawn = true;
         msg.sender.transfer(reward);
         LogWithdraw(msg.sender, reward);
-        return true;
-    }
-
-    function ensureUserCreated(address _user)
-        internal
-        returns(bool)
-    {
-        if (!users[_user].exists) {
-            bytes32[] memory betKeys;
-            User memory user = User(
-                false,
-                false,
-                false,
-                true, // exists
-                betKeys
-            );
-            users[_user] = user;
-        }
         return true;
     }
 }
