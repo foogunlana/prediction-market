@@ -3,9 +3,17 @@ pragma solidity ^0.4.15;
 import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
 import { SafeMath } from './SafeMath.sol';
 
+// Break into Question and market
+// Question should be ownable and stoppable
+// Stoppable should include run switch
+// Market should create questions
+// Each bet should take commission from
+// Remove administration from Question using inheritance
 
 contract PredictionMarket is Ownable {
     using SafeMath for uint;
+    uint public remainder;
+
     enum Answer {UnAnswered, Yes, No}
     struct Question {
         uint totalYesAmount;
@@ -16,8 +24,6 @@ contract PredictionMarket is Ownable {
         uint yesAmount;
         uint noAmount;
     }
-    // Perhaps user should be a library or contract, not a struct
-    // That would get rid of the method accessors
     struct User {
         bool isAdmin;
         bool isTrustedSource;
@@ -25,37 +31,29 @@ contract PredictionMarket is Ownable {
         bool exists;
         bytes32[] betKeys;
     }
+
     mapping (address => User) public users;
     mapping (bytes32 => Bet) public bets;
     mapping (bytes32 => Question) public questions;
-    // Account for the remainders sent, but what to do with them?
-    uint public remainder;
 
     event LogAddAdmin(address _admin);
     event LogAddTrustedSource(address _trustedSource);
     event LogAddQuestion(address _admin, string _question);
+    event LogAnswerQuestion(string _question, Answer _answer);
+    event LogWithdraw(address _user, uint amount);
     event LogPlaceBet(
         bytes32 _betHash,
         address _user,
         bytes32 _questionHash,
         uint _yesAmount,
         uint _noAmount);
-    event LogAnswerQuestion(string _question, Answer _answer);
-    event LogWithdraw(address _user, uint amount);
+
+    modifier onlyAdmin { require(users[msg.sender].isAdmin); _;}
+    modifier onlyTrustedSource { require(users[msg.sender].isTrustedSource); _;}
 
     function PredictionMarket() {
         ensureUserCreated(msg.sender);
         users[msg.sender].isAdmin = true;
-    }
-
-    modifier onlyAdmin {
-        require(users[msg.sender].isAdmin);
-        _;
-    }
-
-    modifier onlyTrustedSource {
-        require(users[msg.sender].isTrustedSource);
-        _;
     }
 
     function isAdmin(address user)
@@ -91,24 +89,6 @@ contract PredictionMarket is Ownable {
         ensureUserCreated(_admin);
         users[_admin].isAdmin = true;
         LogAddAdmin(_admin);
-        return true;
-    }
-
-    function ensureUserCreated(address _user)
-        internal
-        returns(bool)
-    {
-        if (!users[_user].exists) {
-            bytes32[] memory betKeys;
-            User memory user = User(
-                false,
-                false,
-                false,
-                true, // exists
-                betKeys
-            );
-            users[_user] = user;
-        }
         return true;
     }
 
@@ -198,6 +178,24 @@ contract PredictionMarket is Ownable {
         users[msg.sender].hasWithdrawn = true;
         msg.sender.transfer(reward);
         LogWithdraw(msg.sender, reward);
+        return true;
+    }
+
+    function ensureUserCreated(address _user)
+        internal
+        returns(bool)
+    {
+        if (!users[_user].exists) {
+            bytes32[] memory betKeys;
+            User memory user = User(
+                false,
+                false,
+                false,
+                true, // exists
+                betKeys
+            );
+            users[_user] = user;
+        }
         return true;
     }
 }
