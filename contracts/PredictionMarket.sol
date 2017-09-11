@@ -1,6 +1,6 @@
 pragma solidity ^0.4.15;
 
-import 'zeppelin-solidity/contracts/ownership/Ownable.sol';
+import { Pausable } from 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import { SafeMath } from './SafeMath.sol';
 
 // Break into Question and market
@@ -10,7 +10,7 @@ import { SafeMath } from './SafeMath.sol';
 // Each bet should take commission from
 // Remove administration from Question using inheritance
 
-contract PredictionMarket is Ownable {
+contract PredictionMarket is Pausable {
     using SafeMath for uint;
     uint public remainder;
 
@@ -36,6 +36,9 @@ contract PredictionMarket is Ownable {
     mapping (bytes32 => Bet) public bets;
     mapping (bytes32 => Question) public questions;
 
+    modifier onlyAdmin { require(users[msg.sender].isAdmin); _;}
+    modifier onlyTrustedSource { require(users[msg.sender].isTrustedSource); _;}
+
     event LogAddAdmin(address _admin);
     event LogAddTrustedSource(address _trustedSource);
     event LogAddQuestion(address _admin, string _question);
@@ -48,12 +51,11 @@ contract PredictionMarket is Ownable {
         uint _yesAmount,
         uint _noAmount);
 
-    modifier onlyAdmin { require(users[msg.sender].isAdmin); _;}
-    modifier onlyTrustedSource { require(users[msg.sender].isTrustedSource); _;}
-
-    function PredictionMarket() {
+    function PredictionMarket(address _sponsor) {
         ensureUserCreated(msg.sender);
+        ensureUserCreated(_sponsor);
         users[msg.sender].isAdmin = true;
+        users[_sponsor].isAdmin = true;
     }
 
     function isAdmin(address user)
@@ -84,6 +86,7 @@ contract PredictionMarket is Ownable {
     function addAdmin(address _admin)
         public
         onlyAdmin
+        whenNotPaused
         returns(bool)
     {
         ensureUserCreated(_admin);
@@ -95,6 +98,7 @@ contract PredictionMarket is Ownable {
     function addTrustedSource(address _trustedSource)
         public
         onlyAdmin
+        whenNotPaused
         returns(bool)
     {
         ensureUserCreated(_trustedSource);
@@ -106,6 +110,7 @@ contract PredictionMarket is Ownable {
     function addQuestion(string _question)
         public
         onlyAdmin
+        whenNotPaused
         returns(bool)
     {
         bytes32 questionHash = sha3(_question);
@@ -119,6 +124,7 @@ contract PredictionMarket is Ownable {
     function placeBet(string _question, uint _yesAmount, uint _noAmount)
         public
         payable
+        whenNotPaused
         returns(bool)
     {
         require(msg.value == _yesAmount + _noAmount);
@@ -139,6 +145,7 @@ contract PredictionMarket is Ownable {
     function answerQuestion(string _question, bool _answer)
         public
         onlyTrustedSource
+        whenNotPaused
         returns(bool)
     {
         bytes32 questionHash = sha3(_question);
@@ -150,6 +157,7 @@ contract PredictionMarket is Ownable {
 
     function withdraw(string _question)
         public
+        whenNotPaused
         returns(bool)
     {
         ensureUserCreated(msg.sender);
