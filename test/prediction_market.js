@@ -113,8 +113,18 @@ contract("PredictionMarket", accounts => {
     });
   });
 
-  describe("Questions", () => {
-    it("should be created with the sender as an admin", async () => {
+  describe("Questions created", () => {
+    let question;
+
+    beforeEach(async () => {
+      await market.ask(
+        phrase,
+        {from: admin});
+      const address = await market.getQuestion(phrase);
+      question = await Question.at(address);
+    });
+
+    it("should be created with the market as owner and sender as an admin", async () => {
       await market.ask(
         phrase,
         {from: admin});
@@ -123,6 +133,40 @@ contract("PredictionMarket", accounts => {
       assert(
         await question.isAdmin(admin),
         "Creator is not an admin on the question :(");
+      assert.equal(
+        await question.owner(),
+        market.address,
+        "Market is not the owner of the question :(");
+    });
+
+    it("should be pausable and unpausable only by admins", async () => {
+      try{
+        await market.pauseQuestion(
+          phrase,
+          {from: notAdmin});
+        assert(false, "Anybody could pause the question!");
+      } catch (e) {};
+
+      await market.pauseQuestion(
+        phrase,
+        {from: admin});
+      assert(
+        await question.paused(),
+        "An admin could not pause the question");
+
+      try{
+        await market.unpauseQuestion(
+          phrase,
+          {from: notAdmin});
+        assert(false, "Anybody could unpause the question!");
+      } catch (e) {};
+
+      await market.unpauseQuestion(
+        phrase,
+        {from: admin});
+      assert(
+        !await question.paused(),
+        "An admin could not pause the question");
     });
   });
 });
