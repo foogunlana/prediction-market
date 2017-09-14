@@ -55,21 +55,6 @@ function expectedExceptionPromise(action, gasToUse) {
   });
 }
 
-function solSha3 (...args) {
-  args = args.map(arg => {
-    if (typeof arg === "string") {
-      if (arg.substring(0, 2) === "0x") {
-        return arg.slice(2);
-      } else {
-        return web3.toHex(arg).slice(2);
-      }
-    }
-  });
-  args = args.join("");
-  return web3.sha3(args, { encoding: "hex" });
-}
-
-
 contract("Question", accounts => {
   const owner = accounts[0];
   const admin = accounts[1];
