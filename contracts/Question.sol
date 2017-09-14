@@ -3,12 +3,6 @@ pragma solidity ^0.4.15;
 import { Pausable } from 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import { SafeMath } from './SafeMath.sol';
 
-// Break into Q and market
-// Q should be ownable and stoppable
-// Stoppable should include run switch
-// Market should create questions
-// Each bet should take commission from
-// Remove administration from Q using inheritance
 
 contract Question is Pausable {
     using SafeMath for uint256;
