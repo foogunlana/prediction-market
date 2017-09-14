@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "solidity-sha3": "^0.4.1",
-    "zeppelin-solidity": "^1.2.0"
+    "zeppelin-solidity": "^1.2.0",
+    "truffle-contract": "^3.0.0"
   }
 }
