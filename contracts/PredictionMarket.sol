@@ -8,6 +8,7 @@ contract PredictionMarket is Ownable {
 
     mapping (address => bool) public isAdmin;
     mapping (bytes32 => address) public questions;
+    mapping (bytes32 => bool) public questionExists;
     // consider struct Question { bool exists; address addr };
     string[] public phrases;
 
@@ -29,10 +30,32 @@ contract PredictionMarket is Ownable {
         returns(bool success)
     {
         phrases.push(_phrase);
+        bytes32 questionHash = keccak256(_phrase);
         Question question = new Question(msg.sender, _phrase);
-        questions[keccak256(_phrase)] = question;
+        questions[questionHash] = question;
+        questionExists[questionHash] = true;
         LogCreateQuestion(msg.sender, _phrase, question);
         return true;
+    }
+
+    function pauseQuestion(string _phrase)
+        public
+        onlyAdmin
+        returns(bool success)
+    {
+        bytes32 questionHash = keccak256(_phrase);
+        require(questionExists[questionHash]);
+        return Question(questions[questionHash]).pause();
+    }
+
+    function unpauseQuestion(string _phrase)
+        public
+        onlyAdmin
+        returns(bool success)
+    {
+        bytes32 questionHash = keccak256(_phrase);
+        require(questionExists[questionHash]);
+        return Question(questions[questionHash]).unpause();
     }
 
     function addAdmin(address _user)
@@ -50,6 +73,8 @@ contract PredictionMarket is Ownable {
         constant
         returns(address)
     {
-        return questions[sha3(_phrase)];
+        bytes32 questionHash = keccak256(_phrase);
+        require(questionExists[questionHash]);
+        return questions[questionHash];
     }
 }
