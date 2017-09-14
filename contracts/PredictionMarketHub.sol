@@ -1,7 +1,7 @@
 pragma solidity ^0.4.15;
 
 import { Ownable } from 'zeppelin-solidity/contracts/ownership/Ownable.sol';
-import { PredictionMarket } from './PredictionMarket.sol';
+import { Question } from './Question.sol';
 
 
 contract PredictionMarketHub is Ownable {
@@ -22,7 +22,7 @@ contract PredictionMarketHub is Ownable {
         onlyOwner
         returns(bool success)
     {
-        PredictionMarket market = new PredictionMarket(_sponsor);
+        Question market = new Question(_sponsor);
         markets.push(market);
         marketExists[market] = true;
         LogCreateMarket(_sponsor, market);
@@ -35,7 +35,7 @@ contract PredictionMarketHub is Ownable {
         onlyExistingMarkets(_market)
         returns(bool success)
     {
-        return PredictionMarket(_market).pause();
+        return Question(_market).pause();
     }
 
     function unpauseMarket(address _market)
@@ -44,13 +44,6 @@ contract PredictionMarketHub is Ownable {
         onlyExistingMarkets(_market)
         returns(bool success)
     {
-        return PredictionMarket(_market).unpause();
-    }
-
-    function takeCommission(address _market)
-        public
-        onlyOwner
-    {
-        // Prediction market should set balance 
+        return Question(_market).unpause();
     }
 }
