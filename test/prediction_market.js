@@ -60,12 +60,16 @@ function expectedExceptionPromise(action, gasToUse) {
 contract("PredictionMarket", accounts => {
   const owner = accounts[0];
   const admin = accounts[1];
+  const otherAdmin = accounts[2];
   const notAdmin = accounts[3];
   const phrase = "What will the price of ETH be?";
   let market;
 
   beforeEach(async () => {
     market = await PredictionMarket.new(
+      {from: owner});
+    await market.addAdmin(
+      admin,
       {from: owner});
   });
 
@@ -78,10 +82,10 @@ contract("PredictionMarket", accounts => {
 
     it("should let only admins add admins", async () => {
       await market.addAdmin(
-        admin,
-        {from: owner});
+        otherAdmin,
+        {from: admin});
       assert(
-        await market.isAdmin(admin),
+        await market.isAdmin(otherAdmin),
         "Admin could not set another admin!");
       try{
         await market.addAdmin(
@@ -91,8 +95,8 @@ contract("PredictionMarket", accounts => {
       } catch (e) {};
     });
 
-    it("should let only admins create questions", async () => {
-      await market.createQuestion(
+    it("should let only admins ask questions", async () => {
+      await market.ask(
         phrase,
         {from: admin});
       try {
@@ -101,7 +105,7 @@ contract("PredictionMarket", accounts => {
         assert(false, "Failed to create question!");
       }
       try {
-        await market.createQuestion(
+        await market.ask(
           phrase,
           {from: notAdmin});
         assert(false, "Strangers are making questions mate!");
@@ -111,7 +115,7 @@ contract("PredictionMarket", accounts => {
 
   describe("Questions", () => {
     it("should be created with the sender as an admin", async () => {
-      await market.createQuestion(
+      await market.ask(
         phrase,
         {from: admin});
       const address = await market.getQuestion(phrase);
