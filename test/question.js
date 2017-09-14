@@ -201,7 +201,6 @@ contract("Question", accounts => {
       } catch (e) {};
     });
 
-    // INCOMPLETE TEST!!!
     it("should allow winning users withdraw after question resolution", async () => {
       let users = [{
         address: otherUsers[0],
@@ -234,25 +233,25 @@ contract("Question", accounts => {
       const originalBalances = await Promise.all(
         users.map(u => web3.eth.getBalancePromise(u.address)));
 
-      // const txs = await Promise.all(users.map(u =>
-      //     question.withdraw(
-      //       {from: u.address, gasPrice: gasPrice})));
-      //
-      // const ETHUsed = txs.map(tx => tx.receipt.gasUsed * gasPrice);
-      // const _balances = await Promise.all(
-      //   users.map(u => web3.eth.getBalancePromise(u.address)));
-      //
-      // const rounder = 100000;
-      // for (let i in _balances) {
-      //   let roundedReward = total - (total%rounder);
-      //   assert(
-      //     _balances[i]
-      //     .minus(originalBalances[i]
-      //       .plus(roundedReward)
-      //       .minus(ETHUsed[i]))
-      //     .lte(rounder),
-      //     "Exact reward amount not returned to user!");
-      // }
+      const txs = await Promise.all(users.map(u =>
+          question.withdraw(
+            {from: u.address, gasPrice: gasPrice})));
+
+      const ETHUsed = txs.map(tx => tx.receipt.gasUsed * gasPrice);
+      const _balances = await Promise.all(
+        users.map(u => web3.eth.getBalancePromise(u.address)));
+
+      const rounder = 100000;
+      for (let i in _balances) {
+        let roundedReward = total - (total%rounder);
+        assert(
+          _balances[i]
+          .minus(originalBalances[i]
+            .plus(roundedReward)
+            .minus(ETHUsed[i]))
+          .lte(rounder),
+          "Exact reward amount not returned to user!");
+      }
     });
   });
 });

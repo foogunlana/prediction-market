@@ -17,12 +17,12 @@ contract PredictionMarketHub is Ownable {
 
     function Hub() {}
 
-    function createMarket(address _sponsor)
+    function createMarket(address _sponsor, string _phrase)
         public
         onlyOwner
         returns(bool success)
     {
-        Question market = new Question(_sponsor);
+        Question market = new Question(_sponsor, _phrase);
         markets.push(market);
         marketExists[market] = true;
         LogCreateMarket(_sponsor, market);
