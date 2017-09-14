@@ -1,4 +1,7 @@
+const Promise = require("bluebird");
 const Question = artifacts.require("./Question.sol");
+
+Promise.promisifyAll(web3.eth, { suffix: "Promise" });
 
 function getTransactionReceiptMined(txHash, interval) {
   const transactionReceiptAsync = function(resolve, reject) {
@@ -75,6 +78,7 @@ contract("Question", accounts => {
   const trustedSource = accounts[4];
   const user = accounts[5];
   const otherUsers = accounts.slice(6, 9);
+  const phrase = "What will the price of ETH be?";
   const Answer = {
     None: 0,
     Yes: 1,
@@ -85,20 +89,23 @@ contract("Question", accounts => {
   beforeEach(async () => {
     question = await Question.new(
       admin,
+      phrase,
       {from: owner});
     return await question.addTrustedSource(
       trustedSource,
       {from: admin});
   });
 
-  it("should add the owner and address passed in as admins", async () => {
+  it("should add the owner, admin and trusted source", async () => {
     const _owner = await question.owner();
-    const [ownerIsAdmin, adminIsAdmin] = await Promise.all([
-      question.isAdmin(_owner),
-      question.isAdmin(admin)
+    const [ownerIsAdmin, adminIsAdmin, sourceIsTrusted] = await Promise.all([
+      question.isAdmin.call(_owner),
+      question.isAdmin.call(admin),
+      question.isTrustedSource.call(trustedSource)
     ]);
     assert(ownerIsAdmin, "Owner was not set as admin");
     assert(adminIsAdmin, "Admin was not set as admin");
+    assert(sourceIsTrusted, "Admin was not set as admin");
   });
 
   describe("Admin permissions", () => {
@@ -107,7 +114,7 @@ contract("Question", accounts => {
           otherAdmin,
           {from: admin});
       assert(
-        question.isAdmin(otherAdmin),
+        await question.isAdmin.call(otherAdmin),
         "Admin could not set another admin!");
 
       return expectedExceptionPromise(() => {
@@ -151,18 +158,12 @@ contract("Question", accounts => {
   describe("Trusted source permissions", () => {
     it("should allow only trusted sources answer the question", async () => {
       const answer = true;
-      expectedExceptionPromise(() => {
-        question.resolve(
+      try{
+        await question.resolve(
           answer,
           {from: user, gas: 2000000});
-      }, 2000000)
-      .catch(e => {
-        if (e.toString().indexOf("Invalid Type") != -1) {
-          assert(false, "Anyone can answer a question!");
-        } else {
-          throw e;
-        }
-      });
+        assert(false, "Anyone can set a trusted source!");
+      } catch (e) {};
 
       await question.resolve(
         answer,
@@ -180,45 +181,29 @@ contract("Question", accounts => {
       const yesAmount = web3.toWei(1, "ether");
       const noAmount = web3.toWei(1, "ether");
       const amount = web3.toWei(2, "ether");
-      // const answer = true;
+      const answer = true;
       await question.placeBet(
         yesAmount,
         noAmount,
         {from: user, value: amount});
-      // .then(() => {
-      //   return instance.questions(solSha3(phrase));
-      // })
-      //
-      // .then(_bet => {
-      //   assert.equal(
-      //     _bet[yesAmountIndex].valueOf(),
-      //     yesAmount.toString(),
-      //     "Bet yes was not placed by user");
-      //   assert.equal(
-      //     _bet[noAmountIndex].valueOf(),
-      //     noAmount.toString(),
-      //     "Bet no was not placed by user");
-      //   return instance.resolve(
-      //     phrase,
-      //     answer,
-      //     {from: trustedSource});
-      // })
-      // .then(() => {
-      //   return expectedExceptionPromise(() => {
-      //     return instance.placeBet(
-      //       phrase,
-      //       yesAmount,
-      //       noAmount,
-      //       {from: user, value: amount});
-      //   })
-      //   .catch(e => {
-      //     if (e.toString().indexOf("Invalid Type") != -1) {
-      //       assert(false, "Seems bets can still be placed after question is answered!");
-      //     } else {
-      //       throw e;
-      //     }
-      //   });
-      // });
+      assert.equal(
+        await question.yesPosition.call(user),
+        yesAmount,
+        "Bet yes was not placed by user");
+      assert.equal(
+        await question.noPosition.call(user),
+        noAmount,
+        "Bet no was not placed by user");
+      await question.resolve(
+        answer,
+        {from: trustedSource});
+      try{
+        await question.placeBet(
+          yesAmount,
+          noAmount,
+          {from: user, value: amount});
+        assert(false, "Seems bets can still be placed after question is answered!");
+      } catch (e) {};
     });
 
     it("should reject bets that don't add up (i.e. yes + no != total)", () => {
@@ -276,7 +261,7 @@ contract("Question", accounts => {
         {from: trustedSource});
 
       const originalBalances = await Promise.all(
-        users.map(u => web3.eth.getBalance(u.address)));
+        users.map(u => web3.eth.getBalancePromise(u.address)));
 
       const txs = await Promise.all(users.map(u =>
           question.withdraw(
@@ -284,7 +269,7 @@ contract("Question", accounts => {
 
       const ETHUsed = txs.map(tx => tx.receipt.gasUsed * gasPrice);
       const _balances = await Promise.all(
-        users.map(u => web3.eth.getBalance(u.address)));
+        users.map(u => web3.eth.getBalancePromise(u.address)));
 
       for (let i in _balances) {
         let reward = (parseFloat(users[i].yesAmount)/parseFloat(totalYesAmount)) * total;
