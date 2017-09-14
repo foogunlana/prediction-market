@@ -79,11 +79,7 @@ contract("Question", accounts => {
   const user = accounts[5];
   const otherUsers = accounts.slice(6, 9);
   const phrase = "What will the price of ETH be?";
-  const Answer = {
-    None: 0,
-    Yes: 1,
-    No: 2
-  };
+  const answer = 300;
   let question;
 
   beforeEach(async () => {
@@ -157,7 +153,6 @@ contract("Question", accounts => {
 
   describe("Trusted source permissions", () => {
     it("should allow only trusted sources answer the question", async () => {
-      const answer = true;
       try{
         await question.resolve(
           answer,
@@ -169,92 +164,68 @@ contract("Question", accounts => {
         answer,
         {from: trustedSource});
 
+      const [_answer, _answered] = await Promise.all([
+        question.answer(),
+        question.answered()
+      ]);
       assert.equal(
-        await question.answer(),
-        Answer.Yes,
+        _answer,
+        answer,
         "The answer was not set.");
+      assert.equal(
+        _answered,
+        true,
+        "The contract did not indicate that it had been answered");
     });
   });
 
   describe("User API", () => {
-    it("should allow anyone place a bet on an unanswered question", async () => {
-      const yesAmount = web3.toWei(1, "ether");
-      const noAmount = web3.toWei(1, "ether");
+    it("should allow anyone guess on an unanswered question", async () => {
       const amount = web3.toWei(2, "ether");
-      const answer = true;
-      await question.placeBet(
-        yesAmount,
-        noAmount,
+      const guess = answer;
+      await question.guess(
+        guess,
         {from: user, value: amount});
       assert.equal(
-        await question.yesPosition.call(user),
-        yesAmount,
-        "Bet yes was not placed by user");
-      assert.equal(
-        await question.noPosition.call(user),
-        noAmount,
-        "Bet no was not placed by user");
+        await question.guessed.call(user),
+        guess,
+        "User's guess was not saved!");
       await question.resolve(
         answer,
         {from: trustedSource});
       try{
-        await question.placeBet(
-          yesAmount,
-          noAmount,
+        await question.guess(
+          guess,
           {from: user, value: amount});
-        assert(false, "Seems bets can still be placed after question is answered!");
+        assert(false, "Seems guessses can still be made after question is answered!");
       } catch (e) {};
-    });
-
-    it("should reject bets that don't add up (i.e. yes + no != total)", () => {
-      const yesAmount = web3.toWei(1, "ether");
-      const noAmount = web3.toWei(1, "ether");
-      const amount = web3.toWei(1, "ether");
-      return expectedExceptionPromise(() => {
-        return question.placeBet(
-          yesAmount,
-          noAmount,
-          {from: user, value: amount, gas: 2000000});
-      }, 2000000)
-      .catch(e => {
-        if (e.toString().indexOf("Invalid Type") != -1) {
-          assert(false, "Invalid amounts can be set!");
-        } else {
-          throw e;
-        }
-      });
     });
 
     // INCOMPLETE TEST!!!
     it("should allow winning users withdraw after question resolution", async () => {
       let users = [{
         address: otherUsers[0],
-        yesAmount: web3.toWei(1.5, "ether"),
-        noAmount: web3.toWei(1.2582, "ether"),
+        guess: 170.234,
+        amount: web3.toWei(1, "ether")
       }, {
         address: otherUsers[1],
-        yesAmount: web3.toWei(0.3777, "ether"),
-        noAmount: web3.toWei(2.93, "ether"),
+        guess: 101.5,
+        amount: web3.toWei(1, "ether")
       }, {
         address: otherUsers[2],
-        yesAmount: web3.toWei(30, "ether"),
-        noAmount: web3.toWei(1.1678, "ether"),
+        guess: 250,
+        amount: web3.toWei(1, "ether")
       }];
-      let totalYesAmount = users.reduce(
-        (total, user) => parseFloat(user.yesAmount) + total, 0);
-      let totalNoAmount = users.reduce(
-        (total, user) => parseFloat(user.noAmount) + total, 0);
-      let total = totalNoAmount + totalYesAmount;
-      const answer = true;
-      const gasPrice = 1000000;
+      let total = users.reduce(
+        (total, u) => parseFloat(u.amount) + total, 0);
 
+      const gasPrice = 1000000;
       await Promise.all(
-        users.map(u => question.placeBet(
-          u.yesAmount,
-          u.noAmount,
+        users.map(u => question.guess(
+          u.guess,
           {
             from: u.address,
-            value: parseInt(u.yesAmount) + parseInt(u.noAmount)
+            value: u.amount
           })));
       await question.resolve(
         answer,
@@ -263,27 +234,25 @@ contract("Question", accounts => {
       const originalBalances = await Promise.all(
         users.map(u => web3.eth.getBalancePromise(u.address)));
 
-      const txs = await Promise.all(users.map(u =>
-          question.withdraw(
-            {from: u.address, gasPrice: gasPrice})));
-
-      const ETHUsed = txs.map(tx => tx.receipt.gasUsed * gasPrice);
-      const _balances = await Promise.all(
-        users.map(u => web3.eth.getBalancePromise(u.address)));
-
-      for (let i in _balances) {
-        let reward = (parseFloat(users[i].yesAmount)/parseFloat(totalYesAmount)) * total;
-        // Big number cannot add to sig figs over 15 so must round reward!
-        let rounder = 100000;
-        let roundedReward = reward - (reward%rounder);
-        assert(
-          _balances[i]
-          .minus(originalBalances[i]
-            .plus(roundedReward)
-            .minus(ETHUsed[i]))
-          .lte(rounder),
-          "Exact reward amount not returned to user!");
-      }
+      // const txs = await Promise.all(users.map(u =>
+      //     question.withdraw(
+      //       {from: u.address, gasPrice: gasPrice})));
+      //
+      // const ETHUsed = txs.map(tx => tx.receipt.gasUsed * gasPrice);
+      // const _balances = await Promise.all(
+      //   users.map(u => web3.eth.getBalancePromise(u.address)));
+      //
+      // const rounder = 100000;
+      // for (let i in _balances) {
+      //   let roundedReward = total - (total%rounder);
+      //   assert(
+      //     _balances[i]
+      //     .minus(originalBalances[i]
+      //       .plus(roundedReward)
+      //       .minus(ETHUsed[i]))
+      //     .lte(rounder),
+      //     "Exact reward amount not returned to user!");
+      // }
     });
   });
 });
