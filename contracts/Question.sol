@@ -6,7 +6,6 @@ import { SafeMath } from './SafeMath.sol';
 
 contract Question is Pausable {
     using SafeMath for uint256;
-    enum Answer {UnAnswered, Yes, No}
 
     struct User {
         bool isAdmin;
