@@ -5,12 +5,13 @@ import { Question } from './Question.sol';
 
 
 contract PredictionMarket is Ownable {
-
+    struct Query {
+        address question;
+        uint index;
+    }
     mapping (address => bool) public isAdmin;
-    mapping (bytes32 => address) public questions;
-    mapping (bytes32 => bool) public questionExists;
-    // consider struct Question { bool exists; address addr };
-    string[] public phrases;
+    mapping (bytes32 => Query) public queries;
+    bytes32[] public phraseHashes;
 
     modifier onlyAdmin {
         require(isAdmin[msg.sender]);
@@ -29,11 +30,10 @@ contract PredictionMarket is Ownable {
         onlyAdmin
         returns(bool success)
     {
-        phrases.push(_phrase);
         bytes32 questionHash = keccak256(_phrase);
         Question question = new Question(msg.sender, _phrase);
-        questions[questionHash] = question;
-        questionExists[questionHash] = true;
+        queries[questionHash].question = question;
+        queries[questionHash].index = phraseHashes.push(questionHash) - 1;
         LogCreateQuestion(msg.sender, _phrase, question);
         return true;
     }
@@ -44,8 +44,8 @@ contract PredictionMarket is Ownable {
         returns(bool success)
     {
         bytes32 questionHash = keccak256(_phrase);
-        require(questionExists[questionHash]);
-        return Question(questions[questionHash]).pause();
+        require(questionHash == phraseHashes[queries[questionHash].index]);
+        return Question(queries[questionHash].question).pause();
     }
 
     function unpauseQuestion(string _phrase)
@@ -54,8 +54,8 @@ contract PredictionMarket is Ownable {
         returns(bool success)
     {
         bytes32 questionHash = keccak256(_phrase);
-        require(questionExists[questionHash]);
-        return Question(questions[questionHash]).unpause();
+        require(questionHash == phraseHashes[queries[questionHash].index]);
+        return Question(queries[questionHash].question).unpause();
     }
 
     function addAdmin(address _user)
@@ -68,13 +68,22 @@ contract PredictionMarket is Ownable {
         return true;
     }
 
+    // I wish to be tested too!
+    function getQuestionCount()
+        public
+        constant
+        returns(uint256)
+    {
+        return phraseHashes.length;
+    }
+
     function getQuestion(string _phrase)
         public
         constant
         returns(address)
     {
         bytes32 questionHash = keccak256(_phrase);
-        require(questionExists[questionHash]);
-        return questions[questionHash];
+        require(questionHash == phraseHashes[queries[questionHash].index]);
+        return queries[questionHash].question;
     }
 }
