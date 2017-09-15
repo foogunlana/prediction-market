@@ -38,6 +38,17 @@ contract PredictionMarket is Ownable {
         return true;
     }
 
+    function deposit()
+        public
+        payable
+        returns(bool succes)
+    {
+        // see https://ethereum.stackexchange.com/questions/12765/type-inaccessible-dynamic-type-is-not-implicitly-convertible-to-expected-type
+        /*bytes32 questionHash = keccak256(Question(msg.sender).phrase());
+        require(questionHash == phraseHashes[queries[questionHash].index]);*/
+        return true;
+    }
+
     function pauseQuestion(string _phrase)
         public
         onlyAdmin

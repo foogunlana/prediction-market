@@ -2,7 +2,7 @@ pragma solidity ^0.4.15;
 
 import { Pausable } from 'zeppelin-solidity/contracts/lifecycle/Pausable.sol';
 import { SafeMath } from './SafeMath.sol';
-
+import { PredictionMarketI } from './PredictionMarketI.sol';
 
 contract Question is Pausable {
     using SafeMath for uint256;
@@ -19,8 +19,8 @@ contract Question is Pausable {
     uint256 public remainder;
     uint256 public total;
     uint256 public answer;
-    bool public answered;
     string public phrase;
+    bool public answered;
 
     modifier onlyAdmin { require(users[msg.sender].isAdmin); _;}
     modifier onlyTrustedSource { require(users[msg.sender].isTrustedSource); _;}
@@ -94,6 +94,7 @@ contract Question is Pausable {
         require(!answered);
         answer = _answer;
         answered = true;
+        /*PredictionMarketI(owner).deposit.value(total / 10)(); // commission*/
         LogAnswer(msg.sender, answer);
         return true;
     }
