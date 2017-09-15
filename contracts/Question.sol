@@ -109,6 +109,7 @@ contract Question is Pausable {
 
         users[msg.sender].hasWithdrawn = true;
         if (users[msg.sender].guess == answer) {
+            // TODO: account for multiple correct guesses!
             msg.sender.transfer(total);
             LogWithdraw(msg.sender, total);
         }
